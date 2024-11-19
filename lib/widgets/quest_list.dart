@@ -6,7 +6,6 @@ class QuestList extends StatelessWidget {
   final Function(int) onToggleComplete;
 
   QuestList({required this.quests, required this.onToggleComplete});
-
   @override
   Widget build(BuildContext context) {
     return quests.isEmpty
