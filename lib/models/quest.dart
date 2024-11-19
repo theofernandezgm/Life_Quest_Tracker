@@ -14,24 +14,4 @@ class Quest {
     required this.dueDate,
     this.isCompleted = false,
   });
-  Map<String, dynamic> toMap() {
-    return {
-      '_id': id,
-      'title': title,
-      'description': description,
-      'type': type,
-      'dueDate': dueDate.toString(),
-      'isCompleted': isCompleted,
-    };
-  }
-  factory Quest.fromMap(Map<String, dynamic> map) {
-    return Quest(
-      id: map['_id'],
-      title: map['title'],
-      description: map['description'],
-      type: map['type'],
-      dueDate: DateTime.parse(map['dueDate']),
-      isCompleted: map['isCompleted'] ?? false,
-    );
-  }
 }
