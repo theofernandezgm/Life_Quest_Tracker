@@ -1,10 +1,10 @@
 class Quest {
-  final String id;
-  final String title;
-  final String description;
-  final String type;
-  final DateTime dueDate;
-  final bool isCompleted;
+  String id;
+  String title;
+  String description;
+  String type;
+  String dueDate;
+  bool isCompleted; // Removed final keyword
 
   Quest({
     required this.id,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quest_tracker_app/screens/home_screen.dart';
+import 'package:quest_tracker/screens/home_screen.dart';
 
 
 void main() {
