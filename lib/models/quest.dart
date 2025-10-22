@@ -1,7 +1,7 @@
-import 'package:mongo_dart/mongo_dart.dart';
-
+// lib/models/quest.dart
 class Quest {
-  ObjectId id; // Use ObjectId for MongoDB
+  /// id is stored as a string (we use the record key from the DB as a string)
+  String? id;
   String title;
   String description;
   String type;
@@ -9,7 +9,7 @@ class Quest {
   bool isCompleted;
 
   Quest({
-    required this.id,
+    this.id,
     required this.title,
     required this.description,
     required this.type,
@@ -17,10 +17,8 @@ class Quest {
     this.isCompleted = false,
   });
 
-  // Convert a Quest object into a Map for MongoDB
   Map<String, dynamic> toMap() {
     return {
-      '_id': id,
       'title': title,
       'description': description,
       'type': type,
@@ -29,15 +27,14 @@ class Quest {
     };
   }
 
-  // Create a Quest object from a MongoDB map
-  factory Quest.fromMap(Map<String, dynamic> map) {
+  factory Quest.fromMap(Map<String, dynamic> map, {String? id}) {
     return Quest(
-      id: map['_id'], // MongoDB uses _id
-      title: map['title'],
-      description: map['description'],
-      type: map['type'],
-      dueDate: map['dueDate'],
-      isCompleted: map['isCompleted'],
+      id: id,
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      type: map['type'] ?? '',
+      dueDate: map['dueDate'] ?? '',
+      isCompleted: map['isCompleted'] ?? false,
     );
   }
 }

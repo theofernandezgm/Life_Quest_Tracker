@@ -1,7 +1,7 @@
+// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:quest_tracker/models/quest.dart';
-import 'package:quest_tracker/services/mongo_service.dart';
+import 'package:quest_tracker/services/local_db.dart';
 import 'package:quest_tracker/widgets/quest_list.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -10,179 +10,105 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Use a Future to handle loading state
   late Future<List<Quest>> _questsFuture;
 
   @override
   void initState() {
     super.initState();
-    _fetchQuests();
+    _refresh();
   }
 
-  // Fetch quests from the database
-  void _fetchQuests() {
+  void _refresh() {
     setState(() {
-      _questsFuture = MongoDatabase.getQuests();
+      _questsFuture = LocalDatabase().getAllQuests();
     });
   }
 
-  // Add a new quest to the database
-  void _addQuest(String title, String description, String type, String dueDate) async {
-    await MongoDatabase.addQuest(title, description, type, dueDate);
-    _fetchQuests(); // Refresh the list
-    Navigator.of(context).pop(); // Close the dialog
-  }
+  Future<void> _showQuestDialog({Quest? quest}) async {
+    final titleCtrl = TextEditingController(text: quest?.title ?? '');
+    final descCtrl = TextEditingController(text: quest?.description ?? '');
+    final typeCtrl = TextEditingController(text: quest?.type ?? '');
+    final dueCtrl = TextEditingController(text: quest?.dueDate ?? '');
 
-  // Update an existing quest
-  void _updateQuest(Quest quest) async {
-    await MongoDatabase.updateQuest(quest);
-    _fetchQuests(); // Refresh the list
-    Navigator.of(context).pop(); // Close the dialog
-  }
-
-  // Delete a quest
-  void _deleteQuest(mongo.ObjectId id) async {
-    // Show confirmation dialog
-    bool? confirm = await showDialog(
+    final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Are you sure?'),
-        content: Text('Do you want to delete this quest?'),
-        actions: [
-          TextButton(
-            child: Text('No'),
-            onPressed: () => Navigator.of(ctx).pop(false),
-          ),
-          TextButton(
-            child: Text('Yes'),
-            onPressed: () => Navigator.of(ctx).pop(true),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await MongoDatabase.deleteQuest(id);
-      _fetchQuests(); // Refresh the list
-    }
-  }
-
-  // Toggle quest completion status
-  void _toggleComplete(Quest quest) async {
-    quest.isCompleted = !quest.isCompleted;
-    await MongoDatabase.updateQuest(quest);
-    _fetchQuests(); // Refresh
-  }
-
-  // Show a dialog to add or edit a quest
-  void _showQuestDialog({Quest? quest}) {
-    // If a quest is passed, we are editing. Otherwise, we are adding.
-    final bool isEditing = quest != null;
-
-    final titleController = TextEditingController(text: quest?.title ?? '');
-    final descriptionController =
-    TextEditingController(text: quest?.description ?? '');
-    final typeController = TextEditingController(text: quest?.type ?? '');
-    final dueDateController = TextEditingController(text: quest?.dueDate ?? '');
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isEditing ? 'Edit Quest' : 'Add a Quest'),
+        title: Text(quest == null ? 'Add Quest' : 'Edit Quest'),
         content: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(labelText: 'Title'),
-              ),
-              TextField(
-                controller: descriptionController,
-                decoration: InputDecoration(labelText: 'Description'),
-              ),
-              TextField(
-                controller: typeController,
-                decoration: InputDecoration(labelText: 'Type'),
-              ),
-              TextField(
-                controller: dueDateController,
-                decoration: InputDecoration(labelText: 'Due Date (e.g., YYYY-MM-DD)'),
-              ),
+              TextField(controller: titleCtrl, decoration: InputDecoration(labelText: 'Title')),
+              TextField(controller: descCtrl, decoration: InputDecoration(labelText: 'Description')),
+              TextField(controller: typeCtrl, decoration: InputDecoration(labelText: 'Type')),
+              TextField(controller: dueCtrl, decoration: InputDecoration(labelText: 'Due Date')),
             ],
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
-              if (titleController.text.isNotEmpty) {
-                if (isEditing) {
-                  // Create updated quest object
-                  final updatedQuest = Quest(
-                    id: quest.id, // Keep the original ID
-                    title: titleController.text,
-                    description: descriptionController.text,
-                    type: typeController.text,
-                    dueDate: dueDateController.text,
-                    isCompleted: quest.isCompleted, // Keep original status
-                  );
-                  _updateQuest(updatedQuest);
-                } else {
-                  // Add new quest
-                  _addQuest(
-                    titleController.text,
-                    descriptionController.text,
-                    typeController.text,
-                    dueDateController.text,
-                  );
-                }
+            onPressed: () async {
+              final newQuest = Quest(
+                id: quest?.id,
+                title: titleCtrl.text.trim(),
+                description: descCtrl.text.trim(),
+                type: typeCtrl.text.trim(),
+                dueDate: dueCtrl.text.trim(),
+                isCompleted: quest?.isCompleted ?? false,
+              );
+              if (quest == null) {
+                await LocalDatabase().addQuest(newQuest);
+              } else {
+                await LocalDatabase().updateQuest(newQuest);
               }
+              Navigator.of(ctx).pop(true);
             },
-            child: Text(isEditing ? 'Save' : 'Add'),
+            child: Text('Save'),
           ),
         ],
       ),
     );
+
+    if (result == true) _refresh();
+  }
+
+  Future<void> _toggleComplete(Quest quest) async {
+    quest.isCompleted = !quest.isCompleted;
+    await LocalDatabase().updateQuest(quest);
+    _refresh();
+  }
+
+  Future<void> _deleteQuest(String id) async {
+    await LocalDatabase().deleteQuest(id);
+    _refresh();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Quest Tracker'),
+        title: Text('Life Quest Tracker (Local Demo)'),
       ),
       body: FutureBuilder<List<Quest>>(
         future: _questsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Failed to load quests: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: Text(
-                'No quests yet! Add one using the + button.',
-                style: TextStyle(fontSize: 18, color: Colors.grey),
-              ),
-            );
-          } else {
-            // We have data, show the list
-            final quests = snapshot.data!;
-            return QuestList(
-              quests: quests,
-              onToggleComplete: (quest) => _toggleComplete(quest),
-              onEdit: (quest) => _showQuestDialog(quest: quest),
-              onDelete: (id) => _deleteQuest(id),
-            );
           }
+          final quests = snapshot.data ?? [];
+          if (quests.isEmpty) {
+            return Center(child: Text('No quests yet — add one with +'));
+          }
+          return QuestList(
+            quests: quests,
+            onToggleComplete: _toggleComplete,
+            onEdit: (q) => _showQuestDialog(quest: q),
+            onDelete: (id) => _deleteQuest(id),
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showQuestDialog(), // Show dialog to add
+        onPressed: () => _showQuestDialog(),
         child: Icon(Icons.add),
       ),
     );

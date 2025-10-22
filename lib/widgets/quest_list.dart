@@ -1,12 +1,12 @@
+// lib/widgets/quest_list.dart
 import 'package:flutter/material.dart';
-import 'package:mongo_dart/mongo_dart.dart';
 import 'package:quest_tracker/models/quest.dart';
 
 class QuestList extends StatelessWidget {
   final List<Quest> quests;
-  final Function(Quest) onToggleComplete;
-  final Function(Quest) onEdit;
-  final Function(ObjectId) onDelete;
+  final void Function(Quest) onToggleComplete;
+  final void Function(Quest) onEdit;
+  final void Function(String) onDelete;
 
   QuestList({
     required this.quests,
@@ -19,35 +19,23 @@ class QuestList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       itemCount: quests.length,
-      itemBuilder: (ctx, index) {
+      itemBuilder: (context, index) {
         final quest = quests[index];
         return Card(
-          margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: ListTile(
-            leading: Checkbox(
-              value: quest.isCompleted,
-              onChanged: (value) => onToggleComplete(quest),
+            leading: IconButton(
+              icon: Icon(quest.isCompleted ? Icons.check_box : Icons.check_box_outline_blank),
+              onPressed: () => onToggleComplete(quest),
             ),
-            title: Text(
-              quest.title,
-              style: TextStyle(
-                decoration: quest.isCompleted
-                    ? TextDecoration.lineThrough
-                    : TextDecoration.none,
-              ),
-            ),
-            subtitle: Text(quest.description),
+            title: Text(quest.title),
+            subtitle: Text('${quest.type} • Due: ${quest.dueDate}\n${quest.description}'),
+            isThreeLine: true,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () => onEdit(quest),
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => onDelete(quest.id),
-                ),
+                IconButton(icon: Icon(Icons.edit), onPressed: () => onEdit(quest)),
+                IconButton(icon: Icon(Icons.delete, color: Colors.red), onPressed: () => onDelete(quest.id ?? '')),
               ],
             ),
           ),
