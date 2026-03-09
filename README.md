@@ -23,8 +23,6 @@
 
 ## 📸 Screenshots
 
-*(Replace with your app images)*  
-
 | Home / Daily Quests | Add Quest | Quest Completion |
 |--------------------|-----------|-----------------|
 | ![Home](#) | ![Add](#) | ![Complete](#) |
